@@ -1,14 +1,11 @@
 ---
-title: API Reference
+title: Life.io User Management API Reference
 
 language_tabs:
   - shell
   - ruby
-  - python
-  - javascript
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
   - <a href='https://github.com/tripit/slate'>Documentation Powered by Slate</a>
 
 includes:
@@ -17,173 +14,264 @@ includes:
 search: true
 ---
 
-# Introduction
+# Life.io User Management API Reference
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
-
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
-
-This example API documentation page was created with [Slate](https://github.com/tripit/slate). Feel free to edit it and use it as a base for your own API's documentation.
+Welcome to the Life.io User Management API. Instructions for authentication and all available endpoints are listed below.
 
 # Authentication
 
-> To authorize, use this code:
+All requests to the User Management API require an API Key and a User Management Admin Token.
+
+The API Key and User Management Admin Token can be obtained from the rails console accessing the appropriate database via the following commands:
+
+`ApiKey.create(client_type: "user_management")`
+
+`UserManagementAdminToken.create`
+
+This User Management API was designed with the assumption that the API Key and User Management Admin Token would be stored as environment variables within the User Management Dashboard and passed back to the server with each request.
+
+
+# Application Users
+
+## Get confirmed_at timestamp
 
 ```ruby
-require 'kittn'
+include HTTParty
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
+BASE_URL = "https://hq.life.io/api/user_management/v1"
 
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-```
-
-```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-```
-
-> Make sure to replace `meowmeowmeow` with your API key.
-
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
-
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
-
-`Authorization: meowmeowmeow`
-
-<aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
-</aside>
-
-# Kittens
-
-## Get All Kittens
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
-
-```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let kittens = api.kittens.get();
-```
-
-> The above command returns JSON structured like this:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
+@options = {
+  headers: {
+    "Authorization": @user_management_admin_token
   },
-  {
-    "id": 2,
-    "name": "Max",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
+  body: {
+    "api_key": @api_key,
+    "application_user": {
+      "email": CGI::escape(user.email)
+    }
   }
-]
-```
+}
 
-This endpoint retrieves all kittens.
+HTTParty.get("#{BASE_URL}/application_users", @options)
 
-### HTTP Request
-
-`GET http://example.com/api/kittens`
-
-### Query Parameters
-
-Parameter | Default | Description
---------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
-
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
-
-## Get a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
 ```
 
 ```shell
-curl "http://example.com/api/kittens/2"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.get(2);
+curl "https://hq.life.io/api/user_management/v1/application_users"
+  -X GET
+  -d "api_key=your_api_key
+      &application_user[email]=test@test.com"
+  -H "Authorization: Token token=your_user_management_admin_token"
 ```
 
 > The above command returns JSON structured like this:
 
 ```json
 {
-  "id": 2,
-  "name": "Max",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
+  "confirmed_at": 2016-11-08 12:14:56 -060
 }
+
 ```
 
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
+This endpoint retrieves a specific user's confirmed_at timestamp.
 
 ### HTTP Request
 
-`GET http://example.com/kittens/<ID>`
+`GET https://hq.life.io/api/user_management/v1/application_users`
+
+### Query Parameters
+
+Parameter | Description
+--------- | -----------
+email | The application user's email address is used to find the specific user. ID is not accepted.
+
+<aside class="notice">
+Note — the email address must be wrapped in a CGI::escape().
+</aside>
+
+## Delete a User
+
+```ruby
+include HTTParty
+
+BASE_URL = "https://hq.life.io/api/user_management/v1"
+
+@options = {
+  headers: {
+    "Authorization": @user_management_admin_token
+  },
+  body: {
+    "api_key": @api_key,
+    "application_user": {
+      "email": CGI::escape(user.email)
+    }
+  }
+}
+
+HTTParty.delete("#{BASE_URL}/application_users", @options)
+```
+
+```shell
+curl "https://hq.life.io/api/user_management/v1/application_users"
+  -X DELETE
+  -d "api_key=your_api_key
+      &application_user[email]=test@test.com"
+  -H "Authorization: Token token=your_user_management_admin_token"
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "message": "User deleted"
+}
+```
+
+This endpoint deletes a user.
+
+### HTTP Request
+
+`DELETE "https://hq.life.io/api/user_management/v1/application_users"`
 
 ### URL Parameters
 
 Parameter | Description
 --------- | -----------
-ID | The ID of the kitten to retrieve
+email | The application user's email address is used to find the specific user. ID is not accepted.
 
+
+# Branches
+
+## Create a Branch
+
+```ruby
+include HTTParty
+
+BASE_URL = "https://hq.life.io/api/user_management/v1"
+
+@options = {
+  headers: {
+    "Authorization": @user_management_admin_token
+  },
+  body: {
+    "api_key": @api_key,
+    "branch": {
+      "name": "your_branch_name",
+      "company_id": company_id,
+      "country": "your_branch_country",
+      "state": "your_branch_state",
+      "city": "your_branch_city"
+    }
+  }
+}
+
+HTTParty.post("#{BASE_URL}/branches", @options)
+
+```
+
+```shell
+curl "https://hq.life.io/api/user_management/v1/branches"
+  -X POST
+  -d "api_key=your_api_key
+      &branch[name]=your_branch_name
+      &branch[company_id]=company_id
+      &branch[country]=your_branch_country
+      &branch[state]=your_branch_state
+      &branch[city]=your_branch_city"
+  -H "Authorization: Token token=your_user_management_admin_token"
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "shared_id": 1,
+  "registration_token": "ABC12DEFafcdeg123ab456="
+}
+
+```
+
+This endpoint creates a branch.
+
+### HTTP Request
+
+`POST https://hq.life.io/api/user_management/v1/branches`
+
+### Query Parameters
+
+Parameter | Description
+--------- | -----------
+name | Required. Name of new branch.
+company_id | Required. Shared_id of the parent company of new branch.
+country | Required. Country where new branch is located.
+state | Required. State where new branch is located.
+city | Required. City where new branch is located.
+
+
+<aside class="notice">
+Note — the company_id should be the shared_id returned when creating the parent company of this branch. If you have not created the parent company of this branch yet, you must do this step first.
+</aside>
+
+
+# Companies
+
+## Create a Company
+
+```ruby
+include HTTParty
+
+BASE_URL = "https://hq.life.io/api/user_management/v1"
+
+@options = {
+  headers: {
+    "Authorization": @user_management_admin_token
+  },
+  body: {
+    "api_key": @api_key,
+    "company": {
+      "name": "your_company_name"
+      "parent_organization_name": "parent_org_name"
+    }
+  }
+}
+
+HTTParty.post("#{BASE_URL}/companies", @options)
+
+```
+
+```shell
+curl "https://hq.life.io/api/user_management/v1/branches"
+  -X POST
+  -d "api_key=your_api_key
+      &company[name]=your_company_name
+      &company[parent_organization_name]=parent_org_name"
+  -H "Authorization: Token token=your_user_management_admin_token"
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "shared_id": 1,
+  "subdomain": "hq"
+}
+
+```
+
+This endpoint creates a company.
+
+### HTTP Request
+
+`POST https://hq.life.io/api/user_management/v1/companies`
+
+### Query Parameters
+
+Parameter | Description
+--------- | -----------
+name | Required. Name of new company.
+parent_organization_name | Required. Name of the parent organization of the new company.
+
+
+<aside class="notice">
+Note — Double check the spelling and accuracy of the parent organization name. This name will be used to create the relationship between the new company and its parent org.
+</aside>
